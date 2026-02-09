@@ -2,7 +2,6 @@
 
 AI-powered biomechanical analysis of MS Dhoni's match-winning innings in the 2011 ICC Cricket World Cup Final.
 
-Built for **SportAI** CEO presentation.
 
 **Live Demo:** [match-analyzer.vercel.app](https://match-analyzer.vercel.app)
 
@@ -16,7 +15,7 @@ Built for **SportAI** CEO presentation.
 | 4 | **AI Insights** | Frame-by-frame analysis of the 0.4 seconds before contact |
 | 5 | **The Choice** | Shot selection and field placement strategy |
 | 6 | **Head Stability** | Comparison of head movement — Average Batsman vs Dhoni (0mm drift) |
-| 7 | **The Verdict** | Elite performance rating with 96% SportAI confidence |
+| 7 | **The Verdict** | Elite performance rating with 96% AI confidence |
 
 ## Tech Stack
 

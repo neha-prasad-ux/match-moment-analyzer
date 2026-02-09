@@ -71,7 +71,7 @@ export default function Verdict() {
 
         {/* Confidence badge */}
         <p className="text-teal font-mono text-sm mt-6">
-          SportAI Confidence: 96%
+          AI Confidence: 96%
         </p>
       </div>
     </Section>
