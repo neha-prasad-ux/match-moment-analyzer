@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Moment Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #09090b;
+  --surface: #111113;
+  --surface-2: #18181b;
+  --surface-3: #1e1e22;
+  --amber: #f5a623;
+  --amber-dim: rgba(245, 166, 35, 0.12);
+  --amber-glow: rgba(245, 166, 35, 0.06);
+  --white: #fafafa;
+  --gray-100: #e4e4e7;
+  --gray-200: #d4d4d8;
+  --gray-300: #a1a1aa;
+  --gray-400: #71717a;
+  --gray-500: #52525b;
+  --gray-600: #3f3f46;
+  --gray-700: #27272a;
+  --green: #22c55e;
+  --red: #ef4444;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+html { scroll-behavior: smooth; background: var(--bg); color: var(--white); }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--amber);
+  color: var(--bg);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  z-index: 10000;
+  text-decoration: none;
+}
+.skip-link:focus { top: 1rem; }
+
+/* Progress Bar */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--amber), #fbbf24);
+  z-index: 1000;
+  width: 0%;
+  transition: width 0.15s linear;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Animations */
+.fade-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-section.visible { opacity: 1; transform: translateY(0); }
+
+.stagger-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.stagger-item.visible { opacity: 1; transform: translateY(0); }
+
+/* View switching */
+#story-view, #coach-view { transition: opacity 0.35s ease; }
+.view-hidden { display: none !important; opacity: 0; }
+
+/* ======== APP SHELL ======== */
+.app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--gray-700);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  z-index: 999;
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--amber);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-icon svg { width: 16px; height: 16px; }
+
+.app-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--white);
+}
+
+.app-badge {
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-dim);
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+}
+
+.toggle-group {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 3px;
+  border: 1px solid var(--gray-700);
+}
+
+.toggle-btn {
+  padding: 6px 16px;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  letter-spacing: -0.01em;
+}
+
+.toggle-btn.active {
+  background: var(--white);
+  color: var(--bg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.toggle-btn:hover:not(.active) { color: var(--gray-200); }
+
+/* ======== VIDEO HERO ======== */
+.video-hero {
+  padding-top: 56px;
+  background: var(--bg);
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+}
+
+.video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-overlay-strip {
+  background: linear-gradient(180deg, rgba(9,9,11,0) 0%, var(--bg) 100%);
+  padding: 4rem 2rem 2rem;
+  margin-top: -6rem;
+  position: relative;
+  z-index: 2;
+}
+
+.video-meta {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-dim);
+  padding: 5px 12px;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.match-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--amber);
+  border-radius: 50%;
+}
+
+.hero-title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 0.75rem;
+}
+
+.hero-sub {
+  font-size: 1rem;
+  color: var(--gray-300);
+  font-weight: 400;
+  margin-bottom: 2rem;
+}
+
+.hero-sub strong {
+  color: var(--white);
+  font-weight: 600;
+}
+
+/* Stat row */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--gray-700);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 1.5rem;
+}
+
+.stat-cell {
+  background: var(--surface);
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.stat-cell:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.stat-cell:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+
+.stat-number {
+  font-family: var(--mono);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.35rem;
+}
+
+/* ======== MAIN CONTENT AREA ======== */
+.content-area {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Section blocks */
+.block {
+  padding: 4rem 0;
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.block:last-child { border-bottom: none; }
+
+.block-header {
+  margin-bottom: 2rem;
+}
+
+.block-number {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.block-title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--white);
+}
+
+.block-prose {
+  font-size: 0.95rem;
+  color: var(--gray-200);
+  line-height: 1.75;
+  max-width: 680px;
+}
+
+.block-prose + .block-prose { margin-top: 1rem; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: border-color 0.2s ease;
+}
+
+.card:hover { border-color: var(--gray-600); }
+
+.card-accent {
+  border-left: 3px solid var(--amber);
+}
+
+.card-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.card-text {
+  font-size: 0.85rem;
+  color: var(--gray-200);
+  line-height: 1.65;
+}
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+
+/* Split layout */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.split-visual {
+  position: sticky;
+  top: 80px;
+}
+
+/* Shot cards */
+.shot-card {
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.shot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.shot-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.shot-time {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--gray-400);
+  background: var(--surface-2);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.shot-desc {
+  font-size: 0.85rem;
+  color: var(--gray-200);
+  line-height: 1.65;
+  margin-bottom: 0.5rem;
+}
+
+.shot-quote {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--gray-400);
+  line-height: 1.65;
+  padding-left: 1rem;
+  border-left: 2px solid var(--gray-600);
+  margin-bottom: 0.5rem;
+}
+
+.shot-detail {
+  font-size: 0.8rem;
+  color: var(--gray-400);
+  line-height: 1.6;
+}
+
+/* Metric cards - big numbers */
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(245, 166, 35, 0.3);
+  box-shadow: 0 0 30px var(--amber-glow);
+}
+
+.metric-big {
+  font-family: var(--mono);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  color: var(--amber);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.metric-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gray-200);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.6rem;
+}
+
+.metric-comp {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+/* AI Section 5 - The Invisible */
+.ai-split-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.ai-col-header {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.ai-col-dim .ai-col-header { color: var(--gray-500); }
+.ai-col-highlight .ai-col-header { color: var(--amber); }
+
+.ai-col-dim p {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  line-height: 1.7;
+}
+
+.ai-reveal-item {
+  font-size: 0.85rem;
+  color: var(--gray-100);
+  line-height: 1.6;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--gray-700);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.ai-reveal-item::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  background: var(--amber);
+  border-radius: 50%;
+  margin-top: 0.5rem;
+}
+
+/* Annotated Dhoni Image */
+.annotated-image-container {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+}
+
+.annotated-image-container img {
+  width: 100%;
+  display: block;
+  filter: brightness(0.7) contrast(1.1);
+}
+
+.annotation-point {
+  position: absolute;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.annotation-point.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.annotation-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--amber);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(245, 166, 35, 0.6);
+  position: absolute;
+}
+
+.annotation-line {
+  position: absolute;
+  height: 1px;
+  background: var(--amber);
+  transform-origin: left center;
+}
+
+.annotation-label {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--amber);
+  white-space: nowrap;
+  background: rgba(9, 9, 11, 0.85);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  letter-spacing: 0.03em;
+}
+
+/* Kinetic chain */
+.kinetic-step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.kinetic-step:last-child { border-bottom: none; }
+
+.kinetic-num {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 10px;
+  border: 2px solid var(--gray-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  transition: all 0.5s ease;
+}
+
+.kinetic-step.lit .kinetic-num {
+  border-color: var(--amber);
+  color: var(--bg);
+  background: var(--amber);
+  box-shadow: 0 0 16px rgba(245, 166, 35, 0.3);
+}
+
+.kinetic-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 0.2rem;
+}
+
+.kinetic-desc {
+  font-size: 0.85rem;
+  color: var(--gray-200);
+  line-height: 1.6;
+}
+
+/* Verdict */
+.verdict-card {
+  background: var(--surface);
+  border: 2px solid var(--amber);
+  border-radius: var(--radius-lg);
+  padding: 3rem;
+  text-align: center;
+  margin-top: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.verdict-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--amber-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.verdict-big {
+  font-family: var(--mono);
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  font-weight: 900;
+  color: var(--amber);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  position: relative;
+}
+
+.verdict-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-200);
+  margin-top: 1rem;
+  position: relative;
+}
+
+.verdict-desc {
+  font-size: 0.9rem;
+  color: var(--gray-400);
+  margin-top: 0.5rem;
+  position: relative;
+}
+
+/* SVG containers */
+.visual-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.visual-container svg { width: 100%; height: auto; }
+
+.draw-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  transition: stroke-dashoffset 1.5s ease;
+}
+.visible .draw-line { stroke-dashoffset: 0; }
+.svg-fade { opacity: 0; transition: opacity 0.6s ease; }
+.visible .svg-fade { opacity: 1; }
+
+/* ======== COACH VIEW ======== */
+.coach-panel {
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.coach-panel:last-child { border-bottom: none; }
+
+.coach-panel-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coach-panel-title::before {
+  content: '';
+  width: 3px;
+  height: 18px;
+  background: var(--amber);
+  border-radius: 2px;
+}
+
+/* Coach table */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--gray-700);
+}
+
+.data-table th {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--gray-700);
+}
+
+.data-table td {
+  font-size: 0.85rem;
+  color: var(--gray-100);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--gray-700);
+  background: var(--surface);
+}
+
+.data-table tr:last-child td { border-bottom: none; }
+
+.status-good {
+  color: var(--green);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-warn {
+  color: var(--amber);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Coach metric cards */
+.coach-metric {
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.coach-metric:hover { border-color: var(--gray-600); }
+
+.cm-val {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: -0.02em;
+}
+
+.cm-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--gray-300);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 0.3rem;
+}
+
+/* Improvement items */
+.improvement-card {
+  background: var(--surface);
+  border: 1px solid var(--gray-700);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.improvement-card p {
+  font-size: 0.85rem;
+  color: var(--gray-200);
+  line-height: 1.7;
+}
+
+.improvement-card strong { color: var(--amber); font-weight: 600; }
+
+/* Coaching verdict */
+.coach-verdict {
+  background: var(--surface);
+  border: 2px solid var(--amber);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.coach-verdict::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, var(--amber-glow) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.cv-rating {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--amber);
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.coach-verdict p {
+  font-size: 0.9rem;
+  color: var(--gray-200);
+  line-height: 1.7;
+  position: relative;
+}
+
+/* Phase labels */
+.phase-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.phase-label {
+  font-size: 0.6rem;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.phase-label span { color: var(--amber); font-weight: 600; }
+
+/* Metrics row (coach) */
+.metrics-bar {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.mb-item { text-align: center; }
+
+.mb-val {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.mb-label {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.15rem;
+}
+
+/* Image attribution */
+.image-credit {
+  font-size: 0.6rem;
+  color: var(--gray-500);
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.image-credit a { color: var(--gray-400); text-decoration: underline; }
+
+/* ======== RESPONSIVE ======== */
+@media (max-width: 768px) {
+  .split { grid-template-columns: 1fr; gap: 2rem; }
+  .split-visual { position: static; }
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell:first-child { border-radius: var(--radius) 0 0 0; }
+  .stat-cell:nth-child(2) { border-radius: 0 var(--radius) 0 0; }
+  .stat-cell:nth-child(3) { border-radius: 0 0 0 var(--radius); }
+  .stat-cell:last-child { border-radius: 0 0 var(--radius) 0; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-5 { grid-template-columns: 1fr 1fr; }
+  .ai-split-container { grid-template-columns: 1fr; }
+  .block { padding: 3rem 0; }
+  .app-name { display: none; }
+  .toggle-btn { font-size: 0.65rem; padding: 5px 12px; }
+}
+
+@media (max-width: 480px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  .grid-3, .grid-5 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: 1fr; }
+  .content-area { padding: 0 1rem; }
+  .app-bar { padding: 0 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-section { opacity: 1; transform: none; transition: none; }
+  .stagger-item { opacity: 1; transform: none; transition: none; }
+  .draw-line { stroke-dashoffset: 0; transition: none; }
+  .svg-fade { opacity: 1; transition: none; }
+  .annotation-point { opacity: 1; transform: none; transition: none; }
+}
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="progress-bar" role="progressbar" aria-label="Page scroll progress"></div>
+
+<!-- ======== APP BAR ======== -->
+<nav class="app-bar" role="navigation" aria-label="Main navigation">
+  <div class="app-brand">
+    <div class="app-icon">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M3 8L7 4L11 8L7 12Z" fill="#09090b"/><circle cx="11" cy="5" r="2.5" stroke="#09090b" stroke-width="1.5" fill="none"/></svg>
+    </div>
+    <span class="app-name">Match Moment Analyzer</span>
+    <span class="app-badge">AI Analysis</span>
+  </div>
+  <div class="toggle-group" role="tablist" aria-label="View mode">
+    <button class="toggle-btn active" id="btn-story" role="tab" aria-selected="true" aria-controls="story-view" onclick="switchView('story')">Story</button>
+    <button class="toggle-btn" id="btn-coach" role="tab" aria-selected="false" aria-controls="coach-view" onclick="switchView('coach')">Coach</button>
+  </div>
+</nav>
+
+<!-- ======== VIDEO HERO ======== -->
+<div class="video-hero">
+  <div class="video-wrapper">
+    <iframe
+      src="https://www.youtube.com/embed/R0alThHNb0Y?rel=0&modestbranding=1&color=white"
+      title="2011 ICC Cricket World Cup Final - India vs Sri Lanka"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+      loading="lazy">
+    </iframe>
+  </div>
+  <div class="video-overlay-strip">
+    <div class="video-meta">
+      <div class="match-badge">2011 ICC Cricket World Cup Final</div>
+      <h1 class="hero-title">The Shot That Changed Everything</h1>
+      <p class="hero-sub"><strong>MS Dhoni</strong> -- 91* off 79 balls -- India vs Sri Lanka -- Wankhede Stadium, Mumbai</p>
+      <div class="stat-row" role="list" aria-label="Key match statistics">
+        <div class="stat-cell" role="listitem">
+          <div class="stat-number" data-target="28" aria-label="28 years since India's last World Cup">0</div>
+          <div class="stat-label">Years since last WC</div>
+        </div>
+        <div class="stat-cell" role="listitem">
+          <div class="stat-number" data-target="1.2" data-suffix="B" data-decimal="1" aria-label="1.2 billion watching live">0</div>
+          <div class="stat-label">Watching live</div>
+        </div>
+        <div class="stat-cell" role="listitem">
+          <div class="stat-number" data-text="114/3" aria-label="114 for 3 when Dhoni walked in">0</div>
+          <div class="stat-label">When Dhoni walked in</div>
+        </div>
+        <div class="stat-cell" role="listitem">
+          <div class="stat-number" data-target="161" aria-label="161 runs remaining">0</div>
+          <div class="stat-label">Runs remaining</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== MAIN CONTENT ======== -->
+<main id="main-content">
+
+<!-- ======== STORY VIEW ======== -->
+<div id="story-view" role="tabpanel" aria-labelledby="btn-story">
+<div class="content-area">
+
+<!-- SECTION 1 -->
+<section class="block fade-section" aria-label="The Situation">
+  <div class="block-header">
+    <div class="block-number">01 -- The Situation</div>
+    <h2 class="block-title">India's World Cup dream was slipping.</h2>
+  </div>
+  <div class="split">
+    <div>
+      <p class="block-prose">April 2, 2011. Wankhede Stadium. 33,000 in the ground. 1.2 billion on screens.</p>
+      <p class="block-prose">India hadn't won a World Cup in 28 years. Sri Lanka posted 274.</p>
+      <p class="block-prose">Sehwag gone for a duck. Sachin out for 18. India 31/2. Then Kohli fell at 114/3.</p>
+      <p class="block-prose">161 still needed. Required rate climbing. The stadium held its breath.</p>
+    </div>
+    <div class="split-visual">
+      <div class="visual-container">
+        <svg viewBox="0 0 480 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wicket fall timeline showing India's precarious position">
+          <line x1="40" y1="70" x2="440" y2="70" stroke="#3f3f46" stroke-width="1" stroke-dasharray="4,4" class="draw-line"/>
+          <circle cx="80" cy="70" r="6" fill="#f5a623" class="svg-fade"/>
+          <line x1="80" y1="70" x2="80" y2="105" stroke="#f5a623" stroke-width="1.5" class="svg-fade"/>
+          <text x="80" y="125" text-anchor="middle" fill="#a1a1aa" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">31/1</text>
+          <text x="80" y="58" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9" class="svg-fade">Sehwag</text>
+          <circle cx="100" cy="70" r="6" fill="#f5a623" class="svg-fade"/>
+          <line x1="100" y1="70" x2="100" y2="105" stroke="#f5a623" stroke-width="1.5" class="svg-fade"/>
+          <text x="100" y="125" text-anchor="middle" fill="#a1a1aa" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">31/2</text>
+          <text x="100" y="58" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9" class="svg-fade">Sachin</text>
+          <circle cx="220" cy="70" r="6" fill="#f5a623" class="svg-fade"/>
+          <line x1="220" y1="70" x2="220" y2="105" stroke="#f5a623" stroke-width="1.5" class="svg-fade"/>
+          <text x="220" y="125" text-anchor="middle" fill="#a1a1aa" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">114/3</text>
+          <text x="220" y="58" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9" class="svg-fade">Kohli</text>
+          <circle cx="440" cy="70" r="7" fill="none" stroke="#f5a623" stroke-width="2" class="svg-fade"/>
+          <text x="440" y="57" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" class="svg-fade">275</text>
+          <text x="440" y="125" text-anchor="middle" fill="#52525b" font-family="Inter, sans-serif" font-size="9" class="svg-fade">TARGET</text>
+          <text x="340" y="90" text-anchor="middle" fill="#52525b" font-family="Inter, sans-serif" font-size="9" font-style="italic" class="svg-fade">161 runs to go</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 -->
+<section class="block fade-section" aria-label="The Gamble">
+  <div class="block-header">
+    <div class="block-number">02 -- The Gamble</div>
+    <h2 class="block-title">He wasn't supposed to bat here. He chose to.</h2>
+  </div>
+  <div class="split">
+    <div>
+      <p class="block-prose">Dhoni promoted himself to number 5 -- above Yuvraj Singh, India's in-form batsman and eventual Player of the Tournament.</p>
+      <p class="block-prose">No captain in World Cup history had done this in a final. It was either genius or career suicide.</p>
+      <p class="block-prose">His reasoning: he knew Muralitharan's bowling from 3 years of facing him in CSK nets. He backed himself against spin in the middle overs.</p>
+      <div class="card card-accent" style="margin-top: 1.25rem;">
+        <div class="card-label">Captain's Call</div>
+        <div class="card-text">Promoted himself above Yuvraj Singh. No World Cup captain had ever done this in a final.</div>
+      </div>
+    </div>
+    <div class="split-visual">
+      <div class="visual-container">
+        <svg viewBox="0 0 300 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Batting order showing Dhoni's promotion from number 7 to number 5">
+          <text x="20" y="25" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="2" class="svg-fade">BATTING ORDER</text>
+          <text x="30" y="62" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#1</text>
+          <text x="65" y="62" fill="#52525b" font-family="Inter, sans-serif" font-size="13" text-decoration="line-through" class="svg-fade">Sehwag</text>
+          <text x="30" y="100" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#2</text>
+          <text x="65" y="100" fill="#52525b" font-family="Inter, sans-serif" font-size="13" text-decoration="line-through" class="svg-fade">Sachin</text>
+          <text x="30" y="138" fill="#e4e4e7" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#3</text>
+          <text x="65" y="138" fill="#e4e4e7" font-family="Inter, sans-serif" font-size="13" font-weight="500" class="svg-fade">Gambhir</text>
+          <text x="30" y="176" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#4</text>
+          <text x="65" y="176" fill="#52525b" font-family="Inter, sans-serif" font-size="13" text-decoration="line-through" class="svg-fade">Kohli</text>
+          <rect x="20" y="194" width="185" height="38" rx="8" fill="rgba(245,166,35,0.1)" stroke="#f5a623" stroke-width="1.5" class="svg-fade"/>
+          <text x="30" y="219" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" class="svg-fade">#5</text>
+          <text x="65" y="219" fill="#f5a623" font-family="Inter, sans-serif" font-size="14" font-weight="700" class="svg-fade">DHONI</text>
+          <text x="160" y="219" fill="#f5a623" font-family="Inter, sans-serif" font-size="14" class="svg-fade">&#8593;</text>
+          <text x="30" y="260" fill="#e4e4e7" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#6</text>
+          <text x="65" y="260" fill="#e4e4e7" font-family="Inter, sans-serif" font-size="13" class="svg-fade">Yuvraj</text>
+          <text x="130" y="260" fill="#52525b" font-family="Inter, sans-serif" font-size="12" class="svg-fade">&#8595;</text>
+          <text x="30" y="300" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="12" class="svg-fade">#7</text>
+          <rect x="65" y="286" width="105" height="22" rx="6" fill="none" stroke="#3f3f46" stroke-width="1" stroke-dasharray="4,3" class="svg-fade"/>
+          <text x="82" y="301" fill="#52525b" font-family="Inter, sans-serif" font-size="10" font-style="italic" class="svg-fade">was Dhoni</text>
+          <line x1="215" y1="296" x2="215" y2="218" stroke="#f5a623" stroke-width="1.5" stroke-dasharray="5,4" class="draw-line"/>
+          <polygon points="211,221 215,211 219,221" fill="#f5a623" class="svg-fade"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 -->
+<section class="block fade-section" aria-label="The Build">
+  <div class="block-header">
+    <div class="block-number">03 -- The Build</div>
+    <h2 class="block-title">Three shots that told Sri Lanka it was over.</h2>
+  </div>
+  <div class="split">
+    <div>
+      <div class="shot-card">
+        <div class="shot-header"><div class="shot-name">The Release</div><div class="shot-time">0:36</div></div>
+        <div class="shot-desc">A fine sweep against Muralitharan.</div>
+        <div class="shot-quote">"This wasn't about runs. It was a message -- I'm not going to let you settle."</div>
+        <div class="shot-detail">Disrupted Murali's length, forced him to flatten his trajectory, took away the sharp turn.</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-header"><div class="shot-name">The Statement</div><div class="shot-time">1:33</div></div>
+        <div class="shot-desc">A blistering cover drive.</div>
+        <div class="shot-quote">"First sign of Power Dhoni. The fielders moved from attack to defense."</div>
+        <div class="shot-detail">Weight transfer already optimized. He was in the zone.</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-header"><div class="shot-name">The Pressure Valve</div><div class="shot-time">4:30</div></div>
+        <div class="shot-desc">Brutal slash through point.</div>
+        <div class="shot-quote">"Required rate dropped below 6. Sri Lanka's body language broke."</div>
+        <div class="shot-detail">Short-arm pull using bowler's pace -- no wrist roll, pure timing.</div>
+      </div>
+    </div>
+    <div class="split-visual">
+      <div class="visual-container">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wagon wheel showing three key shots to fine leg, cover, and point">
+          <ellipse cx="200" cy="200" rx="180" ry="180" fill="#111113" stroke="#3f3f46" stroke-width="1"/>
+          <ellipse cx="200" cy="200" rx="30" ry="30" fill="none" stroke="#27272a" stroke-width="0.5"/>
+          <rect x="196" y="170" width="8" height="60" fill="#27272a" rx="2"/>
+          <circle cx="200" cy="220" r="4" fill="#e4e4e7"/>
+          <line x1="200" y1="220" x2="310" y2="360" stroke="#f5a623" stroke-width="2" class="draw-line"/>
+          <circle cx="310" cy="360" r="4" fill="#f5a623" class="svg-fade"/>
+          <text x="320" y="365" fill="#f5a623" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">The Release</text>
+          <line x1="200" y1="220" x2="60" y2="70" stroke="#f5a623" stroke-width="2" class="draw-line"/>
+          <circle cx="60" cy="70" r="4" fill="#f5a623" class="svg-fade"/>
+          <text x="15" y="63" fill="#f5a623" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">The Statement</text>
+          <line x1="200" y1="220" x2="40" y2="180" stroke="#f5a623" stroke-width="2" class="draw-line"/>
+          <circle cx="40" cy="180" r="4" fill="#f5a623" class="svg-fade"/>
+          <text x="5" y="168" fill="#f5a623" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">The Pressure</text>
+          <text x="5" y="181" fill="#f5a623" font-family="Inter, sans-serif" font-size="10" font-weight="600" class="svg-fade">Valve</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4 -->
+<section class="block fade-section" aria-label="The Adaptation">
+  <div class="block-header">
+    <div class="block-number">04 -- The Adaptation</div>
+    <h2 class="block-title">His body was breaking. His brain kept adjusting.</h2>
+  </div>
+  <p class="block-prose">Dhoni batted through significant back pain the entire innings. Documented, not speculative.</p>
+  <p class="block-prose">Early innings: narrow, crouched stance. Minimal footwork. Survival mode against Muralitharan. Middle overs: stance widened. Forward press appeared. Back-foot punches opened up. Late innings: stance went upright to protect his lower back. Backlift shortened from fatigue.</p>
+  <div class="grid-3" style="margin-top: 1.5rem;">
+    <div class="card card-accent">
+      <div class="card-label">Backlift Compression</div>
+      <div class="card-text">As fatigue set in, his backlift shortened. He replaced swing with forearm power.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-label">Fatigue Compensation</div>
+      <div class="card-text">Increased hip-shoulder separation to maintain power when his legs started failing.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-label">Stance Shift</div>
+      <div class="card-text">Narrow, Wide, Upright. Three stances in one innings. Each solving a different problem.</div>
+    </div>
+  </div>
+  <div class="visual-container" style="margin-top: 2rem; max-width: 100%;">
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three batsman stance phases: early crouched, middle wide, and late upright">
+      <g class="svg-fade">
+        <text x="120" y="25" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">EARLY</text>
+        <circle cx="120" cy="85" r="14" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+        <rect x="108" y="102" width="24" height="55" rx="4" fill="none" stroke="#a1a1aa" stroke-width="1.5" transform="rotate(8, 120, 130)"/>
+        <line x1="112" y1="158" x2="108" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="128" y1="158" x2="132" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="138" y1="112" x2="158" y2="55" stroke="#f5a623" stroke-width="2.5"/>
+        <line x1="120" y1="107" x2="138" y2="112" stroke="#a1a1aa" stroke-width="1.5"/>
+        <text x="120" y="240" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="10">Overs 1-8</text>
+      </g>
+      <g class="svg-fade">
+        <text x="360" y="25" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">MIDDLE</text>
+        <circle cx="360" cy="80" r="14" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+        <rect x="348" y="97" width="24" height="55" rx="4" fill="none" stroke="#a1a1aa" stroke-width="1.5" transform="rotate(4, 360, 125)"/>
+        <line x1="350" y1="153" x2="332" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="370" y1="153" x2="388" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="378" y1="105" x2="392" y2="62" stroke="#f5a623" stroke-width="2.5"/>
+        <line x1="360" y1="102" x2="378" y2="105" stroke="#a1a1aa" stroke-width="1.5"/>
+        <text x="360" y="240" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="10">Overs 9-35</text>
+      </g>
+      <g class="svg-fade">
+        <text x="600" y="25" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">LATE</text>
+        <circle cx="600" cy="72" r="14" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+        <rect x="588" y="89" width="24" height="60" rx="4" fill="none" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="590" y1="149" x2="570" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="610" y1="149" x2="630" y2="218" stroke="#a1a1aa" stroke-width="1.5"/>
+        <line x1="618" y1="97" x2="626" y2="78" stroke="#f5a623" stroke-width="2.5"/>
+        <line x1="600" y1="94" x2="618" y2="97" stroke="#a1a1aa" stroke-width="1.5"/>
+        <text x="600" y="240" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="10">Overs 36-49</text>
+      </g>
+      <line x1="158" y1="50" x2="392" y2="58" stroke="#3f3f46" stroke-width="0.5" stroke-dasharray="3,3" class="draw-line"/>
+      <line x1="392" y1="58" x2="626" y2="73" stroke="#3f3f46" stroke-width="0.5" stroke-dasharray="3,3" class="draw-line"/>
+    </svg>
+  </div>
+</section>
+
+<!-- SECTION 5: The Invisible - ANNOTATED REAL IMAGE -->
+<section class="block fade-section" id="section-invisible" aria-label="The Invisible - AI Analysis">
+  <div class="block-header">
+    <div class="block-number">05 -- The Invisible</div>
+    <h2 class="block-title">What happened in the 0.4 seconds before contact.</h2>
+  </div>
+  <div class="annotated-image-container" style="margin-bottom: 2rem; max-width: 680px;">
+    <img
+      src="https://upload.wikimedia.org/wikipedia/commons/1/16/Mahendra_Singh_Dhoni_batting.JPG"
+      alt="MS Dhoni batting - AI pose analysis overlay showing biomechanical markers at key body points during his batting stance"
+      loading="lazy"
+      width="1600"
+      height="1067"
+    />
+    <!-- Annotation overlays positioned over the real image -->
+    <div class="annotation-point" data-delay="0" style="top: 8%; left: 42%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: -140px; top: -8px;">0mm head movement</div>
+    </div>
+    <div class="annotation-point" data-delay="150" style="top: 28%; left: 35%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: -190px; top: -8px;">Lead shoulder closed</div>
+    </div>
+    <div class="annotation-point" data-delay="300" style="top: 35%; left: 55%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: 18px; top: -8px;">Bat angle correction</div>
+    </div>
+    <div class="annotation-point" data-delay="450" style="top: 52%; left: 42%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: 18px; top: -8px;">CG shifted rearward</div>
+    </div>
+    <div class="annotation-point" data-delay="600" style="top: 78%; left: 55%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: 18px; top: -8px;">Trigger backward</div>
+    </div>
+    <div class="annotation-point" data-delay="750" style="top: 88%; left: 42%;">
+      <div class="annotation-dot" style="left: 0; top: 0;"></div>
+      <div class="annotation-label" style="left: -170px; top: -8px;">Dug into turf -- anchor</div>
+    </div>
+    <div class="image-credit">Photo: Dee03 / Wikimedia Commons / CC BY-SA 3.0</div>
+  </div>
+  <div class="ai-split-container">
+    <div class="ai-col-dim">
+      <div class="ai-col-header">What You Saw</div>
+      <p>Dhoni swings. Ball flies over the rope. India wins.</p>
+    </div>
+    <div class="ai-col-highlight" id="ai-reveals">
+      <div class="ai-col-header">What AI Sees</div>
+      <div class="ai-reveal-item stagger-item">Trigger movement backward -- weight loaded onto back foot before delivery</div>
+      <div class="ai-reveal-item stagger-item">Center of gravity shifted rearward to create loft without slogging</div>
+      <div class="ai-reveal-item stagger-item">Back toe dug into turf -- created anchor point for hip rotation</div>
+      <div class="ai-reveal-item stagger-item">Mid-downswing bat angle adjusted by several degrees to find the meat of the bat</div>
+      <div class="ai-reveal-item stagger-item">Lead shoulder stayed closed until the last microsecond -- prevented the slice</div>
+      <div class="ai-reveal-item stagger-item">Head position: zero movement. Eyes level. Fixed on contact point throughout 360-degree body rotation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6 -->
+<section class="block fade-section" id="section-strike" aria-label="The Strike - Kinetic Chain">
+  <div class="block-header">
+    <div class="block-number">06 -- The Strike</div>
+    <h2 class="block-title">Every body part fired in sequence. Like a detonation.</h2>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 0;">
+    <div class="kinetic-step" data-index="0">
+      <div class="kinetic-num">1</div>
+      <div><div class="kinetic-label">Foot Plant</div><div class="kinetic-desc">Front leg cleared to leg side. Created the hitting arc.</div></div>
+    </div>
+    <div class="kinetic-step" data-index="1">
+      <div class="kinetic-num">2</div>
+      <div><div class="kinetic-label">Hip Explosion</div><div class="kinetic-desc">Back hip fired forward. This is where all the power starts.</div></div>
+    </div>
+    <div class="kinetic-step" data-index="2">
+      <div class="kinetic-num">3</div>
+      <div><div class="kinetic-label">Core Uncoil</div><div class="kinetic-desc">Obliques whipped the torso around. Energy transferred upward.</div></div>
+    </div>
+    <div class="kinetic-step" data-index="3">
+      <div class="kinetic-num">4</div>
+      <div><div class="kinetic-label">Arm Extension</div><div class="kinetic-desc">Long levers maximized the swing radius.</div></div>
+    </div>
+    <div class="kinetic-step" data-index="4">
+      <div class="kinetic-num">5</div>
+      <div><div class="kinetic-label">Wrist Snap</div><div class="kinetic-desc">The "helicopter" -- rapid rolling of wrists after impact. 80% bottom-hand power.</div></div>
+    </div>
+    <div class="kinetic-step" data-index="5">
+      <div class="kinetic-num">6</div>
+      <div><div class="kinetic-label">Follow-Through</div><div class="kinetic-desc">Full 360-degree bat rotation. Finished over left shoulder.</div></div>
+    </div>
+  </div>
+  <div class="grid-3" style="margin-top: 1.5rem;">
+    <div class="card card-accent">
+      <div class="card-label">Stance Width</div>
+      <div class="card-text">1.2 meters. 1.2x shoulder width. Stable base for high-torque swing.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-label">Knee Bend</div>
+      <div class="card-text">Back knee dipped 35-40 degrees. Lower than a squat. While swinging.</div>
+    </div>
+    <div class="card card-accent">
+      <div class="card-label">Bat Path</div>
+      <div class="card-text">High-to-low-to-high. Speed maximized at the lowest point -- the slot.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7 -->
+<section class="block fade-section" aria-label="The Physics">
+  <div class="block-header">
+    <div class="block-number">07 -- The Physics</div>
+    <h2 class="block-title">The ball didn't just clear the boundary. It left the stadium.</h2>
+  </div>
+  <div class="grid-5">
+    <div class="metric-card">
+      <div class="metric-big">145</div>
+      <div class="metric-name">Bat Speed (km/h)</div>
+      <div class="metric-comp">Faster than a Nadal forehand</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-big">~35&deg;</div>
+      <div class="metric-name">Launch Angle</div>
+      <div class="metric-comp">Same as artillery range calculations</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-big">~1.5kN</div>
+      <div class="metric-name">Impact Force</div>
+      <div class="metric-comp">A heavyweight boxer's punch</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-big">15m+</div>
+      <div class="metric-name">Boundary Clearance</div>
+      <div class="metric-comp">Cleared the next row of seats</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-big">25-30m</div>
+      <div class="metric-name">Peak Height</div>
+      <div class="metric-comp">Higher than an 8-story building</div>
+    </div>
+  </div>
+  <div class="visual-container" style="max-width: 100%; margin-top: 2rem;">
+    <svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trajectory arc showing ball path from bat to beyond the boundary">
+      <line x1="30" y1="190" x2="650" y2="190" stroke="#27272a" stroke-width="0.5"/>
+      <circle cx="50" cy="175" r="4" fill="#52525b"/>
+      <line x1="50" y1="179" x2="50" y2="188" stroke="#52525b" stroke-width="1.5"/>
+      <path d="M 55 188 Q 320 -40 630 188" fill="none" stroke="#f5a623" stroke-width="2" stroke-dasharray="6,3" class="draw-line"/>
+      <line x1="320" y1="15" x2="320" y2="190" stroke="#3f3f46" stroke-width="0.5" stroke-dasharray="2,3" class="svg-fade"/>
+      <text x="330" y="28" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600" class="svg-fade">25-30m peak</text>
+      <line x1="540" y1="165" x2="540" y2="190" stroke="#e4e4e7" stroke-width="1.5" class="svg-fade"/>
+      <text x="540" y="158" text-anchor="middle" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9" class="svg-fade">BOUNDARY</text>
+      <line x1="542" y1="185" x2="630" y2="185" stroke="#f5a623" stroke-width="1" class="svg-fade"/>
+      <text x="586" y="178" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="9" font-weight="600" class="svg-fade">15m+</text>
+      <text x="58" y="168" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="9" class="svg-fade">145 km/h</text>
+      <text x="295" y="210" text-anchor="middle" fill="#52525b" font-family="Inter, sans-serif" font-size="9" class="svg-fade">~75m to boundary</text>
+    </svg>
+  </div>
+</section>
+
+<!-- SECTION 8 -->
+<section class="block fade-section" aria-label="The Choice">
+  <div class="block-header">
+    <div class="block-number">08 -- The Choice</div>
+    <h2 class="block-title">He had three options. He picked the hardest one.</h2>
+  </div>
+  <div class="split">
+    <div>
+      <p class="block-prose">Kulasekara bowled from wide of the crease. Full delivery on middle stump.</p>
+      <p class="block-prose"><strong style="color: var(--gray-400);">Option 1:</strong> Flick to mid-wicket. Safe but risk of leading edge. Lower percentage.</p>
+      <p class="block-prose"><strong style="color: var(--gray-400);">Option 2:</strong> Straight drive. Full face of bat. But fielder at long-on.</p>
+      <p class="block-prose"><strong style="color: var(--amber);">Option 3:</strong> Lofted on-drive with helicopter finish. Highest risk. Maximum elevation. Clears the fielder.</p>
+      <p class="block-prose">He chose the shot that, if missed, meant LBW or bowled. No half measures. But Dhoni had pre-planned this -- promoting himself in the order was FOR this moment.</p>
+      <div class="card card-accent" style="margin-top: 1.25rem;">
+        <div class="card-label">Why Long-On?</div>
+        <div class="card-text">Kulasekara's wide-of-crease angle naturally favored the long-on arc. Dhoni's most stable hitting zone.</div>
+      </div>
+    </div>
+    <div class="split-visual">
+      <div class="visual-container">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cricket ground showing three shot options, with the helicopter to long-on as the chosen path">
+          <ellipse cx="200" cy="200" rx="180" ry="180" fill="#111113" stroke="#3f3f46" stroke-width="1"/>
+          <ellipse cx="200" cy="200" rx="30" ry="30" fill="none" stroke="#27272a" stroke-width="0.5"/>
+          <rect x="196" y="170" width="8" height="60" fill="#27272a" rx="2"/>
+          <circle cx="200" cy="220" r="4" fill="#e4e4e7"/>
+          <circle cx="215" cy="168" r="3" fill="#52525b"/>
+          <text x="225" y="162" fill="#52525b" font-family="Inter, sans-serif" font-size="8">Bowler</text>
+          <line x1="200" y1="220" x2="310" y2="80" stroke="#3f3f46" stroke-width="1.5" stroke-dasharray="5,4" class="draw-line"/>
+          <text x="315" y="75" fill="#52525b" font-family="Inter, sans-serif" font-size="8">OPTION 1: Flick</text>
+          <line x1="200" y1="220" x2="200" y2="25" stroke="#3f3f46" stroke-width="1.5" stroke-dasharray="5,4" class="draw-line"/>
+          <text x="208" y="30" fill="#52525b" font-family="Inter, sans-serif" font-size="8">OPTION 2: Drive</text>
+          <circle cx="250" cy="45" r="4" fill="#52525b" class="svg-fade"/>
+          <text x="260" y="48" fill="#52525b" font-family="Inter, sans-serif" font-size="7">fielder</text>
+          <line x1="200" y1="220" x2="250" y2="30" stroke="#f5a623" stroke-width="2.5" class="draw-line"/>
+          <circle cx="250" cy="30" r="5" fill="#f5a623" class="svg-fade"/>
+          <text x="200" y="390" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" class="svg-fade">OPTION 3: HELICOPTER</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 9 -->
+<section class="block fade-section" aria-label="The Verdict">
+  <div class="block-header">
+    <div class="block-number">09 -- The Verdict</div>
+    <h2 class="block-title">What makes this elite isn't power. It's stillness.</h2>
+  </div>
+  <p class="block-prose">Most batsmen lose their shape when swinging this hard under this much pressure. Their head pulls up. Their base collapses. They muscle the ball instead of striking it.</p>
+  <p class="block-prose">Dhoni's head didn't move until the ball was halfway to the boundary.</p>
+  <p class="block-prose">That's the difference. Dynamic Balance -- the ability to maintain a still head and stable base while generating extreme rotational velocity.</p>
+  <p class="block-prose">His body rotated 360 degrees. His eyes didn't move once.</p>
+  <div class="grid-2" style="margin-top: 2rem; max-width: 560px;">
+    <div class="card" style="text-align: center; padding: 2rem;">
+      <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--gray-500); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem;">Average Batsman</div>
+      <svg viewBox="0 0 120 120" width="100" height="100" role="img" aria-label="Multiple overlapping circles showing head drift of 8-12mm">
+        <circle cx="52" cy="60" r="30" fill="none" stroke="#3f3f46" stroke-width="0.8" opacity="0.3"/>
+        <circle cx="58" cy="55" r="30" fill="none" stroke="#3f3f46" stroke-width="0.8" opacity="0.4"/>
+        <circle cx="64" cy="58" r="30" fill="none" stroke="#3f3f46" stroke-width="0.8" opacity="0.5"/>
+        <circle cx="56" cy="65" r="30" fill="none" stroke="#3f3f46" stroke-width="0.8" opacity="0.6"/>
+        <circle cx="60" cy="60" r="30" fill="none" stroke="#52525b" stroke-width="1"/>
+      </svg>
+      <div style="font-family: var(--mono); font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">8-12mm drift</div>
+    </div>
+    <div class="card" style="text-align: center; padding: 2rem; border-color: rgba(245,166,35,0.3);">
+      <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--amber); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem;">Dhoni</div>
+      <svg viewBox="0 0 120 120" width="100" height="100" role="img" aria-label="Single crisp circle showing zero head movement">
+        <circle cx="60" cy="60" r="30" fill="none" stroke="#f5a623" stroke-width="2"/>
+      </svg>
+      <div style="font-family: var(--mono); font-size: 0.75rem; color: var(--amber); font-weight: 700; margin-top: 0.5rem;">0mm movement</div>
+    </div>
+  </div>
+  <div class="verdict-card">
+    <div class="verdict-big">0mm</div>
+    <div class="verdict-label">Head Movement at Contact</div>
+    <div class="verdict-desc">A surgeon's stillness during a 145 km/h swing.</div>
+  </div>
+</section>
+
+</div><!-- content-area -->
+</div><!-- story-view -->
+
+<!-- ======== COACH VIEW ======== -->
+<div id="coach-view" class="view-hidden" role="tabpanel" aria-labelledby="btn-coach">
+<div class="content-area">
+
+<!-- Innings Overview -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Innings Overview</div>
+  <div style="max-width: 100%;">
+    <svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Score progression chart showing run accumulation versus required rate over 49 overs">
+      <line x1="60" y1="20" x2="60" y2="210" stroke="#3f3f46" stroke-width="0.5"/>
+      <line x1="60" y1="210" x2="770" y2="210" stroke="#3f3f46" stroke-width="0.5"/>
+      <text x="50" y="210" text-anchor="end" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9">0</text>
+      <text x="50" y="165" text-anchor="end" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9">50</text>
+      <text x="50" y="120" text-anchor="end" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9">100</text>
+      <text x="50" y="75" text-anchor="end" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9">150</text>
+      <text x="50" y="30" text-anchor="end" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="9">200</text>
+      <line x1="60" y1="165" x2="770" y2="165" stroke="#18181b" stroke-width="0.5"/>
+      <line x1="60" y1="120" x2="770" y2="120" stroke="#18181b" stroke-width="0.5"/>
+      <line x1="60" y1="75" x2="770" y2="75" stroke="#18181b" stroke-width="0.5"/>
+      <line x1="60" y1="30" x2="770" y2="30" stroke="#18181b" stroke-width="0.5"/>
+      <text x="60" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">0</text>
+      <text x="205" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">10</text>
+      <text x="350" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">20</text>
+      <text x="495" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">30</text>
+      <text x="640" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">40</text>
+      <text x="770" y="228" text-anchor="middle" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">49</text>
+      <text x="415" y="250" text-anchor="middle" fill="#52525b" font-family="Inter, sans-serif" font-size="9">OVERS</text>
+      <polyline points="60,210 205,165 350,120 495,75 640,30 770,5" fill="none" stroke="#3f3f46" stroke-width="1" stroke-dasharray="4,3"/>
+      <polyline points="60,210 133,200 205,185 280,168 350,148 415,132 495,105 570,82 640,58 710,38 760,18" fill="none" stroke="#f5a623" stroke-width="2.5" class="draw-line"/>
+      <rect x="60" y="213" width="116" height="3" rx="1.5" fill="#f5a623" opacity="0.3"/>
+      <rect x="176" y="213" width="392" height="3" rx="1.5" fill="#f5a623" opacity="0.5"/>
+      <rect x="568" y="213" width="202" height="3" rx="1.5" fill="#f5a623" opacity="0.8"/>
+    </svg>
+  </div>
+  <div class="phase-labels">
+    <div class="phase-label"><span>Survival</span> Overs 1-8</div>
+    <div class="phase-label"><span>Build</span> Overs 9-35</div>
+    <div class="phase-label"><span>Attack</span> Overs 36-49</div>
+  </div>
+  <div class="metrics-bar">
+    <div class="mb-item"><div class="mb-val">91*</div><div class="mb-label">Runs</div></div>
+    <div class="mb-item"><div class="mb-val">79</div><div class="mb-label">Balls</div></div>
+    <div class="mb-item"><div class="mb-val">115.18</div><div class="mb-label">Strike Rate</div></div>
+    <div class="mb-item"><div class="mb-val">8</div><div class="mb-label">Fours</div></div>
+    <div class="mb-item"><div class="mb-val">2</div><div class="mb-label">Sixes</div></div>
+  </div>
+</div>
+
+<!-- Technique Assessment -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Technique Assessment</div>
+  <div style="overflow-x: auto;">
+    <table class="data-table">
+      <thead><tr><th>Metric</th><th>Dhoni (This Innings)</th><th>Elite Baseline</th><th>Assessment</th></tr></thead>
+      <tbody>
+        <tr><td>Backlift Angle</td><td>~45&deg;</td><td>40-50&deg;</td><td><span class="status-good"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7L6 9L10 5" stroke="#22c55e" stroke-width="1.5" fill="none"/></svg>Within range</span></td></tr>
+        <tr><td>Stance Width</td><td>1.2x shoulder</td><td>1.0-1.2x</td><td><span class="status-good"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7L6 9L10 5" stroke="#22c55e" stroke-width="1.5" fill="none"/></svg>Optimal</span></td></tr>
+        <tr><td>Knee Bend</td><td>35-40&deg;</td><td>30-45&deg;</td><td><span class="status-good"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7L6 9L10 5" stroke="#22c55e" stroke-width="1.5" fill="none"/></svg>Within range</span></td></tr>
+        <tr><td>Head Movement</td><td>~0mm</td><td>&lt;5mm</td><td><span class="status-good"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#22c55e" stroke-width="1.5"/><path d="M4 7L6 9L10 5" stroke="#22c55e" stroke-width="1.5" fill="none"/></svg>Elite</span></td></tr>
+        <tr><td>Hip-Shoulder Separation</td><td>High (fatigue)</td><td>Moderate</td><td><span class="status-warn"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="#f5a623" stroke-width="1.5"/><text x="7" y="10.5" text-anchor="middle" fill="#f5a623" font-size="10" font-weight="700">!</text></svg>Monitor</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Shot Analysis -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Shot Analysis -- The Winning Six</div>
+  <div class="grid-4">
+    <div class="coach-metric"><div class="cm-val">145</div><div class="cm-label">Bat Speed (km/h)</div></div>
+    <div class="coach-metric"><div class="cm-val">~35&deg;</div><div class="cm-label">Launch Angle</div></div>
+    <div class="coach-metric"><div class="cm-val">~1.5kN</div><div class="cm-label">Impact Force</div></div>
+    <div class="coach-metric"><div class="cm-val">15m+</div><div class="cm-label">Boundary Clearance</div></div>
+    <div class="coach-metric"><div class="cm-val">25-30m</div><div class="cm-label">Peak Height</div></div>
+    <div class="coach-metric"><div class="cm-val">1.2m</div><div class="cm-label">Stance Width</div></div>
+    <div class="coach-metric"><div class="cm-val">35-40&deg;</div><div class="cm-label">Back Knee Angle</div></div>
+    <div class="coach-metric"><div class="cm-val">~160&deg;</div><div class="cm-label">Front Knee Angle</div></div>
+  </div>
+</div>
+
+<!-- Wagon Wheel -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Shot Wagon Wheel</div>
+  <div class="visual-container" style="max-width: 420px;">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Full wagon wheel showing scoring zones with leg side dominant in amber">
+      <ellipse cx="200" cy="200" rx="180" ry="180" fill="#111113" stroke="#3f3f46" stroke-width="1"/>
+      <ellipse cx="200" cy="200" rx="30" ry="30" fill="none" stroke="#27272a" stroke-width="0.5"/>
+      <rect x="196" y="170" width="8" height="60" fill="#27272a" rx="2"/>
+      <circle cx="200" cy="220" r="3" fill="#e4e4e7"/>
+      <text x="340" y="110" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">LEG SIDE</text>
+      <text x="30" y="110" fill="#52525b" font-family="JetBrains Mono, monospace" font-size="8">OFF SIDE</text>
+      <line x1="200" y1="220" x2="320" y2="60" stroke="#f5a623" stroke-width="1.5" opacity="0.8"/>
+      <line x1="200" y1="220" x2="350" y2="120" stroke="#f5a623" stroke-width="1.5" opacity="0.7"/>
+      <line x1="200" y1="220" x2="370" y2="180" stroke="#f5a623" stroke-width="1.5" opacity="0.8"/>
+      <line x1="200" y1="220" x2="340" y2="280" stroke="#f5a623" stroke-width="1.5" opacity="0.6"/>
+      <line x1="200" y1="220" x2="310" y2="350" stroke="#f5a623" stroke-width="1.5" opacity="0.9"/>
+      <line x1="200" y1="220" x2="290" y2="370" stroke="#f5a623" stroke-width="1.5" opacity="0.7"/>
+      <line x1="200" y1="220" x2="360" y2="150" stroke="#f5a623" stroke-width="1" opacity="0.5"/>
+      <line x1="200" y1="220" x2="330" y2="320" stroke="#f5a623" stroke-width="1" opacity="0.5"/>
+      <circle cx="320" cy="60" r="3" fill="#f5a623" opacity="0.8"/><circle cx="350" cy="120" r="3" fill="#f5a623" opacity="0.7"/>
+      <circle cx="370" cy="180" r="3" fill="#f5a623" opacity="0.8"/><circle cx="340" cy="280" r="3" fill="#f5a623" opacity="0.6"/>
+      <circle cx="310" cy="350" r="3" fill="#f5a623" opacity="0.9"/><circle cx="290" cy="370" r="3" fill="#f5a623" opacity="0.7"/>
+      <circle cx="360" cy="150" r="3" fill="#f5a623" opacity="0.5"/><circle cx="330" cy="320" r="3" fill="#f5a623" opacity="0.5"/>
+      <line x1="200" y1="220" x2="80" y2="80" stroke="#a1a1aa" stroke-width="1" opacity="0.5"/>
+      <line x1="200" y1="220" x2="50" y2="190" stroke="#a1a1aa" stroke-width="1" opacity="0.4"/>
+      <line x1="200" y1="220" x2="100" y2="350" stroke="#a1a1aa" stroke-width="1" opacity="0.5"/>
+      <circle cx="80" cy="80" r="3" fill="#a1a1aa" opacity="0.5"/><circle cx="50" cy="190" r="3" fill="#a1a1aa" opacity="0.4"/>
+      <circle cx="100" cy="350" r="3" fill="#a1a1aa" opacity="0.5"/>
+      <line x1="200" y1="220" x2="200" y2="25" stroke="#52525b" stroke-width="1" opacity="0.4"/>
+      <line x1="200" y1="220" x2="230" y2="30" stroke="#52525b" stroke-width="1" opacity="0.4"/>
+      <circle cx="200" cy="25" r="3" fill="#52525b" opacity="0.4"/><circle cx="230" cy="30" r="3" fill="#52525b" opacity="0.4"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Areas for Improvement -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Areas for Improvement</div>
+  <div class="improvement-card"><p><strong>Fatigue Management:</strong> Backlift compression after over 35 suggests conditioning gap. Shortened backlift reduces shot range.</p></div>
+  <div class="improvement-card"><p><strong>Upright Stance Shift:</strong> Lower back pain forced upright stance in overs 40+. Long-term: core strengthening to maintain crouch under fatigue.</p></div>
+  <div class="improvement-card"><p><strong>Scoring Zones:</strong> Over-reliance on leg-side arc (60%+ of boundaries). Off-side scoring was reactive, not proactive.</p></div>
+</div>
+
+<!-- Coaching Verdict -->
+<div class="coach-panel fade-section">
+  <div class="coach-panel-title">Coaching Verdict</div>
+  <div class="coach-verdict">
+    <div class="cv-rating">Rating: Elite</div>
+    <p>Innings demonstrated exceptional adaptability -- three distinct phases of technique adjustment in response to match state and physical deterioration. Head stability at point of contact remained elite throughout. Primary concern: physical durability limiting late-innings shot selection.</p>
+  </div>
+</div>
+
+</div><!-- content-area -->
+</div><!-- coach-view -->
+
+</main>
+
+<script>
+(function() {
+  // Progress bar
+  const progressBar = document.getElementById('progress-bar');
+  window.addEventListener('scroll', function() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    progressBar.style.width = (docHeight > 0 ? (scrollTop / docHeight) * 100 : 0) + '%';
+  }, { passive: true });
+
+  // View toggle
+  window.switchView = function(view) {
+    const storyView = document.getElementById('story-view');
+    const coachView = document.getElementById('coach-view');
+    const btnStory = document.getElementById('btn-story');
+    const btnCoach = document.getElementById('btn-coach');
+
+    if (view === 'story') {
+      coachView.style.opacity = '0';
+      setTimeout(function() {
+        coachView.classList.add('view-hidden');
+        storyView.classList.remove('view-hidden');
+        setTimeout(function() { storyView.style.opacity = '1'; reObserve(); }, 20);
+      }, 350);
+      btnStory.classList.add('active');
+      btnStory.setAttribute('aria-selected', 'true');
+      btnCoach.classList.remove('active');
+      btnCoach.setAttribute('aria-selected', 'false');
+    } else {
+      storyView.style.opacity = '0';
+      setTimeout(function() {
+        storyView.classList.add('view-hidden');
+        coachView.classList.remove('view-hidden');
+        setTimeout(function() { coachView.style.opacity = '1'; reObserve(); }, 20);
+      }, 350);
+      btnCoach.classList.add('active');
+      btnCoach.setAttribute('aria-selected', 'true');
+      btnStory.classList.remove('active');
+      btnStory.setAttribute('aria-selected', 'false');
+    }
+  };
+
+  // Count-up
+  function animateCountUp() {
+    document.querySelectorAll('.stat-number').forEach(function(el) {
+      var text = el.getAttribute('data-text');
+      if (text) { el.textContent = text; return; }
+      var target = parseFloat(el.getAttribute('data-target'));
+      var suffix = el.getAttribute('data-suffix') || '';
+      var decimal = parseInt(el.getAttribute('data-decimal')) || 0;
+      var start = performance.now();
+      function tick(now) {
+        var p = Math.min((now - start) / 1200, 1);
+        var ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = decimal > 0 ? (ease * target).toFixed(decimal) + suffix : Math.round(ease * target) + suffix;
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+  setTimeout(animateCountUp, 400);
+
+  // IntersectionObserver
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('visible');
+
+      // Section 5: stagger AI items + annotations
+      if (e.target.id === 'section-invisible') {
+        e.target.querySelectorAll('.stagger-item').forEach(function(item, i) {
+          setTimeout(function() { item.classList.add('visible'); }, i * 150);
+        });
+        e.target.querySelectorAll('.annotation-point').forEach(function(ann, i) {
+          var delay = parseInt(ann.getAttribute('data-delay')) || (i * 150);
+          setTimeout(function() { ann.classList.add('visible'); }, delay + 300);
+        });
+      }
+
+      // Section 6: kinetic chain
+      if (e.target.id === 'section-strike') {
+        e.target.querySelectorAll('.kinetic-step').forEach(function(step, i) {
+          setTimeout(function() { step.classList.add('lit'); }, i * 300);
+        });
+      }
+    });
+  }, { threshold: 0.12 });
+
+  function observeAll() {
+    document.querySelectorAll('.fade-section').forEach(function(el) { obs.observe(el); });
+  }
+
+  function reObserve() {
+    document.querySelectorAll('.fade-section:not(.visible)').forEach(function(el) { obs.observe(el); });
+  }
+
+  observeAll();
+})();
+</script>
+</body>
+</html>
