@@ -25,7 +25,7 @@ export default function TheGamble() {
         <div className="bg-surface border border-gray-700/60 rounded-xl p-5 card-hover slide-left">
           <h2 className="text-white text-xl font-semibold mb-3">The Gamble</h2>
           <p className="text-gray-300 text-sm leading-relaxed mb-4">
-            Promoted himself above Yuvraj Singh. No World Cup captain had ever
+            Dhoni promoted himself above Yuvraj Singh. No World Cup captain had ever
             done this in a final.
           </p>
 
@@ -74,7 +74,7 @@ export default function TheGamble() {
         {/* Right Card */}
         <div className="bg-surface border border-gray-700/60 rounded-xl p-5 card-hover slide-right">
           <h2 className="text-white text-xl font-semibold mb-4">
-            Top 3 shots
+            Top 3 shots from Dhoni
           </h2>
           <ol className="space-y-3">
             {topShots.map((shot, i) => (
