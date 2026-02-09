@@ -14,6 +14,14 @@ export default function Home() {
       <ScrollProgress />
       <Header />
       <main className="max-w-[1400px] mx-auto px-4 md:px-6">
+        <div className="py-16 md:py-20 text-center border-b border-gray-700/50">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+            Match Moment Analyzer
+          </h1>
+          <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            Analysing MS Dhoni&apos;s batting skill and decision-making during the 2011 ICC World Cup Final, using broadcast video as the sole data source.
+          </p>
+        </div>
         <TheSituation />
         <TheGamble />
         <ThePosture />

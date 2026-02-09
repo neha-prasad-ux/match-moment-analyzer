@@ -49,7 +49,7 @@ export default function TheSituation() {
         <div className="slide-right card-hover bg-surface border border-gray-700/60 rounded-xl p-5 flex items-center">
           <p className="text-gray-200 text-base leading-relaxed">
             India hadn&apos;t won a World Cup in 28 years. India&apos;s
-            World Cup dream was slipping.
+            World Cup dream was slipping. And then Dhoni enters the crease.
           </p>
         </div>
       </div>
