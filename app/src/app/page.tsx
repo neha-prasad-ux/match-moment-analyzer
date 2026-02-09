@@ -31,7 +31,7 @@ export default function Home() {
         <Verdict />
       </main>
       <footer className="border-t border-gray-700/50 py-8 text-center text-gray-500 text-xs tracking-wide">
-        Match Moment Analyzer v1.0 — by Neha
+        Match Moment Analyzer v1.0 — by <a href="https://neha-prasad.com/" target="_blank" rel="noopener noreferrer" className="text-teal hover:text-white transition-colors">Neha</a>
       </footer>
     </>
   );
