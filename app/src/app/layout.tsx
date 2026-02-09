@@ -16,7 +16,24 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Match Moment Analyzer",
-  description: "AI-powered analysis of the 2011 ICC Cricket World Cup Final - Dhoni's match-winning innings",
+  description:
+    "AI-powered biomechanical analysis of MS Dhoni's match-winning innings in the 2011 ICC Cricket World Cup Final, using broadcast video as the sole data source.",
+  metadataBase: new URL("https://match-analyzer.vercel.app"),
+  openGraph: {
+    title: "Match Moment Analyzer",
+    description:
+      "AI-powered biomechanical analysis of MS Dhoni's match-winning innings in the 2011 ICC Cricket World Cup Final.",
+    url: "https://match-analyzer.vercel.app",
+    siteName: "Match Moment Analyzer",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Match Moment Analyzer",
+    description:
+      "AI-powered biomechanical analysis of MS Dhoni's match-winning innings in the 2011 ICC Cricket World Cup Final.",
+  },
 };
 
 export default function RootLayout({
