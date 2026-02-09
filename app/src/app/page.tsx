@@ -23,7 +23,7 @@ export default function Home() {
         <Verdict />
       </main>
       <footer className="border-t border-gray-700/50 py-8 text-center text-gray-500 text-xs tracking-wide">
-        Powered by <span className="text-teal font-semibold">SportAI</span> &mdash; Match Moment Analyzer v1.0
+        Match Moment Analyzer v1.0
       </footer>
     </>
   );
